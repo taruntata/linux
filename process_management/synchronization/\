@@ -1,0 +1,60 @@
+#include<stdio.h>
+#include<semaphore.h>
+#include<unistd.h>
+#include<pthread.h>
+
+pthread_t consumer, producer;
+
+void *thread_producer(void *arg);
+void *thread_consumer(void *arg);
+
+char buff[26];
+char temp[26];
+sem_t prod, cons;
+
+int main()
+{
+	sem_init(&prod, 0, 1);
+	sem_init(&cons, 0, 0);
+
+	pthread_create(&producer, NULL, thread_producer, NULL);
+	pthread_create(&consumer, NULL, thread_consumer, NULL);
+
+	pthread_join(producer, NULL);
+	pthread_join(consumer, NULL);
+
+	return 0;
+}
+
+void *thread_producer(void *arg)
+{
+	while(1)
+	{
+		int in = 0;
+		char ch = 'A';
+		sem_wait(&prod);
+		for(int i = 0; i < 26; i++)
+		{
+			buff[in] = ch++;
+			in = (in + 1) % 26;
+		}
+		sem_post(&cons);
+	}
+}
+
+void *thread_consumer(void *arg)
+{
+	while(1)
+	{
+		int out = 0;
+		char temp[26];
+		sem_wait(&cons);
+		for(int i = 0; i < 26; i++)
+		{
+			temp[out] = buff[out];
+			out = (out + 1) % 26;
+		}
+		printf("\nconsumer = %s", temp);
+		sem_post(&prod);
+	}
+}
